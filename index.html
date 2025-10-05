@@ -58,7 +58,7 @@
             justify-content: center;
             align-items: center;
             position: relative;
-            min-height: 60px;
+            min-height: 80px;
         }
 
         .btn {
@@ -74,20 +74,14 @@
 
         .btn-agree {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 2;
         }
 
         .btn-agree:hover {
-            transform: translateX(-50%) scale(1.05);
+            transform: scale(1.05);
         }
 
         .btn-reject {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            position: absolute;
-            right: 20px;
         }
 
         .btn-reject:hover {
@@ -115,6 +109,11 @@
             font-size: 16px;
         }
 
+        .hearts {
+            font-size: 40px;
+            margin: 20px 0;
+        }
+
         .close-hint {
             margin-top: 20px;
             padding: 10px 20px;
@@ -122,11 +121,6 @@
             border-radius: 10px;
             color: #999;
             font-size: 14px;
-        }
-
-        .hearts {
-            font-size: 40px;
-            margin: 20px 0;
         }
     </style>
 </head>
@@ -144,7 +138,7 @@
         <div class="result" id="result">
             <div class="hearts">❤️💕💖</div>
             <h2>太好了！</h2>
-            <p>我就知道你会同意的~</p>
+            <p>我就知道你是好大儿~</p>
             <div style="margin-top: 20px; font-size: 60px;">🎉</div>
             <div class="close-hint">页面将自动关闭...</div>
         </div>
@@ -158,55 +152,87 @@
 
         let agreeSize = 1;
         let rejectCount = 0;
+        let hasAgreed = false;
+
+        // 替换成你的Server酱 SendKey
+        const SENDKEY = '你的Server酱Key';
+
+        // 发送通知函数
+        function sendNotification() {
+            if (SENDKEY !== '你的Server酱Key') {
+                fetch(`https://sctapi.ftqq.com/${SENDKEY}.send?title=有人同意了！&desp=爱你老妈`)
+                    .catch(err => console.log('通知发送失败'));
+            }
+        }
+
+        // 阻止用户关闭页面
+        window.addEventListener('beforeunload', function(e) {
+            if (!hasAgreed) {
+                // 发送通知
+                sendNotification();
+                
+                // 阻止关闭
+                e.preventDefault();
+                e.returnValue = '你还没有做出选择哦~';
+                return '你还没有做出选择哦~';
+            }
+        });
+
+        // 阻止返回键
+        window.history.pushState(null, null, window.location.href);
+        window.addEventListener('popstate', function() {
+            if (!hasAgreed) {
+                sendNotification();
+                window.history.pushState(null, null, window.location.href);
+            }
+        });
 
         agreeBtn.addEventListener('click', function() {
+            hasAgreed = true;
             question.style.display = 'none';
             result.style.display = 'block';
             
-            // 发送通知到你的微信
-            const SENDKEY = '你的Server酱Key'; // 替换成你的Key
-            fetch(`https://sctapi.ftqq.com/${SENDKEY}.send?title=有人同意了！&desp=爱你老妈`)
-                .then(() => {
-                    // 等待2秒后尝试关闭页面
-                    setTimeout(() => {
-                        // 尝试关闭窗口（可能不生效）
-                        window.close();
-                        // 如果无法关闭，跳转到空白页
-                        if (!window.closed) {
-                            window.location.href = 'about:blank';
-                        }
-                    }, 2000);
-                })
-                .catch(err => console.log('通知发送失败'));
+            // 发送通知
+            sendNotification();
+            
+            // 2秒后尝试关闭
+            setTimeout(() => {
+                window.close();
+                if (!window.closed) {
+                    window.location.href = 'about:blank';
+                }
+            }, 2000);
         });
 
         rejectBtn.addEventListener('click', function() {
             rejectCount++;
-            agreeSize += 0.3;
+            agreeSize += 0.25;
             
             // 同意按钮变大
-            agreeBtn.style.transform = `translateX(-50%) scale(${agreeSize})`;
+            agreeBtn.style.transform = `scale(${agreeSize})`;
             agreeBtn.style.zIndex = 1000 + rejectCount;
             
             // 拒绝按钮变小并移动
-            const randomX = Math.random() * 60 - 30;
-            const randomY = Math.random() * 60 - 30;
-            rejectBtn.style.transform = `translate(${randomX}px, ${randomY}px) scale(${1 - rejectCount * 0.1})`;
+            const randomX = Math.random() * 100 - 50;
+            const randomY = Math.random() * 100 - 50;
+            const newScale = Math.max(0.3, 1 - rejectCount * 0.12);
+            rejectBtn.style.transform = `translate(${randomX}px, ${randomY}px) scale(${newScale})`;
             
-            // 当点击多次后，拒绝按钮消失
-            if (rejectCount > 5) {
-                rejectBtn.style.display = 'none';
-            }
-            
-            // 改变文字
+            // 改变文字和样式
             if (rejectCount === 1) {
                 rejectBtn.textContent = '真的拒绝？';
             } else if (rejectCount === 2) {
                 rejectBtn.textContent = '再考虑考虑';
             } else if (rejectCount === 3) {
                 rejectBtn.textContent = '别点了';
-            } else if (rejectCount > 3) {
-                rejectBtn.textContent = '点不到我了吧';
+            } else if (rejectCount === 4) {
+                rejectBtn.textContent = '遵从内心吧';
+            } else if (rejectCount === 5) {
+                rejectBtn.textContent = '还不放弃？';
+            } else if (rejectCount === 6) {
+                rejectBtn.textContent = '最后机会';
+            } else if (rejectCount >= 7) {
+                rejectBtn.style.display = 'none';
             }
         });
     </script>
